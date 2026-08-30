@@ -84,7 +84,7 @@ async def send_sanction_message(message: Message, bot: Bot):
         await bot.send_message(
             chat_id=message.chat.id,
             text=(
-                f"{user_text}, были наложены санкции за использование "
+                f"{user_text}, ограничен за использование "
                 "запрещённого стикерпака.\n\n"
                 "Разрешённый стикерпак:\n"
                 "https://t.me/addstickers/t_me_akstikers_by_fStikBot"
