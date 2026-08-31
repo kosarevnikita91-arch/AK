@@ -500,12 +500,26 @@ async def forward_suggestion(
         )
         return
 
-    user_text = get_user_text(message.from_user)
+    user = message.from_user
 
-    caption = (
-        f"Предложение от: {user_text}\n"
-        f"ID пользователя: <code>{user_id}</code>"
+user_name = escape(user.full_name)
+
+if user.username:
+    sender_text = f"@{escape(user.username)}"
+else:
+    sender_text = (
+        f'<a href="tg://user?id={user.id}">'
+        f"{user_name}"
+        f"</a>"
     )
+
+caption = (
+    f"Предложение от: {sender_text}\n"
+    f"Имя: {user_name}\n"
+    f"ID пользователя: <code>{user.id}</code>"
+)
+
+    
 
     try:
         sent_message = await bot.send_photo(
