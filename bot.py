@@ -273,26 +273,18 @@ async def send_sanction_message(
         return
 
     user = message.from_user
-    user_name = escape(user.full_name)
 
     if user.username:
-        sender_text = f"@{escape(user.username)}"
+        user_text = f"@{escape(user.username)}"
     else:
-        sender_text = (
-            f'<a href="tg://user?id={user.id}">'
-            f"{user_name}"
-            f"</a>"
-        )
+        user_text = escape(user.full_name)
 
     text = (
-        f"Пользователь: {sender_text}\n"
-        f"Имя: {user_name}\n"
-        f"ID: <code>{user.id}</code>\n\n"
-        "ограничен за использование запрещённого "
+        f"{user_text} ограничен за использование запрещённого "
         "стикерпака.\n\n"
         "Разрешённый стикерпак: "
         "https://t.me/addstickers/"
-        "t_me_akstikers_by_fStikBot"
+        f"{ALLOWED_PACK_NAME}"
     )
 
     try:
@@ -774,3 +766,5 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+        
