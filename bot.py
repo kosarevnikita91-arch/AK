@@ -18,32 +18,16 @@ from aiogram.types import (
 )
 
 
-# =========================
-# Настройки
-# =========================
-
 ALLOWED_PACK_NAME = "t_me_akstikers_by_fStikBot"
-
-# ID пользователя, которому отправляются предложения
 SUGGESTIONS_USER_ID = 6558705988
-
-# Длительность мута в группе
 MUTE_HOURS = 2
-
-# Длительность блокировки предложки
 BAN_DAYS = 7
 
-# Файлы с данными
 BANNED_USERS_FILE = Path("banned_users.json")
 SUGGESTIONS_FILE = Path("suggestions.json")
 
-
 dp = Dispatcher()
 
-
-# =========================
-# Клавиатуры
-# =========================
 
 start_keyboard = InlineKeyboardMarkup(
     inline_keyboard=[
@@ -63,38 +47,32 @@ def suggestion_keyboard(
     is_rejected: bool = False,
     is_accepted: bool = False,
 ) -> InlineKeyboardMarkup:
-    if is_accepted:
-        accept_button = InlineKeyboardButton(
-            text="Принято",
-            callback_data="already_accepted",
-        )
-    else:
-        accept_button = InlineKeyboardButton(
-            text="Стикер принят",
-            callback_data=f"accept_suggestion:{user_id}",
-        )
+    accept_button = InlineKeyboardButton(
+        text="Принято" if is_accepted else "Стикер принят",
+        callback_data=(
+            "already_accepted"
+            if is_accepted
+            else f"accept_suggestion:{user_id}"
+        ),
+    )
 
-    if is_rejected:
-        reject_button = InlineKeyboardButton(
-            text="Отклонено",
-            callback_data="already_rejected",
-        )
-    else:
-        reject_button = InlineKeyboardButton(
-            text="Стикер отклонён",
-            callback_data=f"reject_suggestion:{user_id}",
-        )
+    reject_button = InlineKeyboardButton(
+        text="Отклонено" if is_rejected else "Стикер отклонён",
+        callback_data=(
+            "already_rejected"
+            if is_rejected
+            else f"reject_suggestion:{user_id}"
+        ),
+    )
 
-    if is_banned:
-        ban_button = InlineKeyboardButton(
-            text="Разбанить",
-            callback_data=f"unban_suggestion:{user_id}",
-        )
-    else:
-        ban_button = InlineKeyboardButton(
-            text="Забанить",
-            callback_data=f"ban_suggestion:{user_id}",
-        )
+    ban_button = InlineKeyboardButton(
+        text="Разбанить" if is_banned else "Забанить",
+        callback_data=(
+            f"unban_suggestion:{user_id}"
+            if is_banned
+            else f"ban_suggestion:{user_id}"
+        ),
+    )
 
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -103,10 +81,6 @@ def suggestion_keyboard(
         ]
     )
 
-
-# =========================
-# Работа с банами
-# =========================
 
 def load_banned_users() -> Dict[int, str]:
     if not BANNED_USERS_FILE.exists():
@@ -178,10 +152,6 @@ def is_user_banned(user_id: int) -> bool:
     return True
 
 
-# =========================
-# Работа с предложениями
-# =========================
-
 def load_suggestions() -> Dict[int, int]:
     if not SUGGESTIONS_FILE.exists():
         return {}
@@ -230,19 +200,7 @@ def save_suggestions(suggestions: Dict[int, int]):
         )
 
 
-# ID сообщения администратора -> ID пользователя
 suggestion_messages = load_suggestions()
-
-
-# =========================
-# Вспомогательные функции
-# =========================
-
-def get_user_text(user) -> str:
-    if user.username:
-        return f"@{escape(user.username)}"
-
-    return escape(user.full_name)
 
 
 async def is_admin(message: Message, bot: Bot) -> bool:
@@ -259,10 +217,6 @@ async def is_admin(message: Message, bot: Bot) -> bool:
         "creator",
     }
 
-
-# =========================
-# Мут в группе
-# =========================
 
 async def mute_user(message: Message, bot: Bot):
     if message.from_user is None:
@@ -304,11 +258,6 @@ async def mute_user(message: Message, bot: Bot):
             until_date=until_date,
         )
 
-        print(
-            f"Выдан мут на {MUTE_HOURS} ч.",
-            flush=True,
-        )
-
     except Exception as error:
         print(
             f"Ошибка выдачи мута: {error}",
@@ -316,25 +265,30 @@ async def mute_user(message: Message, bot: Bot):
         )
 
 
-# =========================
-# Уведомление о наказании
-# =========================
-
 async def send_sanction_message(
     message: Message,
     bot: Bot,
 ):
-    """
-    Отправляет сообщение в группу и удаляет его через 15 секунд.
-    """
-
     if message.from_user is None:
         return
 
-    user_text = get_user_text(message.from_user)
+    user = message.from_user
+    user_name = escape(user.full_name)
+
+    if user.username:
+        sender_text = f"@{escape(user.username)}"
+    else:
+        sender_text = (
+            f'<a href="tg://user?id={user.id}">'
+            f"{user_name}"
+            f"</a>"
+        )
 
     text = (
-        f"{user_text} ограничен за использование запрещённого "
+        f"Пользователь: {sender_text}\n"
+        f"Имя: {user_name}\n"
+        f"ID: <code>{user.id}</code>\n\n"
+        "ограничен за использование запрещённого "
         "стикерпака.\n\n"
         "Разрешённый стикерпак: "
         "https://t.me/addstickers/"
@@ -355,20 +309,16 @@ async def send_sanction_message(
 
         except Exception as error:
             print(
-                f"Не удалось удалить сообщение о наказании: {error}",
+                f"Ошибка удаления уведомления: {error}",
                 flush=True,
             )
 
     except Exception as error:
         print(
-            f"Не удалось отправить сообщение о наказании: {error}",
+            f"Ошибка отправки уведомления: {error}",
             flush=True,
         )
 
-
-# =========================
-# Команда /start
-# =========================
 
 @dp.message(
     F.chat.type == "private",
@@ -387,10 +337,6 @@ async def start_command(message: Message):
     )
 
 
-# =========================
-# Кнопка «Предложить стикер»
-# =========================
-
 @dp.callback_query(F.data == "suggest_sticker")
 async def suggest_sticker_button(callback: CallbackQuery):
     await callback.answer()
@@ -400,10 +346,6 @@ async def suggest_sticker_button(callback: CallbackQuery):
             "Прикрепите фото стикера к следующему сообщению."
         )
 
-
-# =========================
-# Ответ администратора пользователю
-# =========================
 
 @dp.message(
     F.chat.type == "private",
@@ -460,7 +402,7 @@ async def reply_to_suggestion(
 
     except Exception as error:
         print(
-            f"Ошибка отправки ответа пользователю: {error}",
+            f"Ошибка отправки ответа: {error}",
             flush=True,
         )
 
@@ -468,10 +410,6 @@ async def reply_to_suggestion(
             "Не удалось отправить ответ пользователю."
         )
 
-
-# =========================
-# Получение предложений
-# =========================
 
 @dp.message(F.chat.type == "private")
 async def forward_suggestion(
@@ -481,7 +419,8 @@ async def forward_suggestion(
     if message.from_user is None:
         return
 
-    user_id = message.from_user.id
+    user = message.from_user
+    user_id = user.id
 
     if user_id == SUGGESTIONS_USER_ID:
         return
@@ -500,26 +439,22 @@ async def forward_suggestion(
         )
         return
 
-    user = message.from_user
+    user_name = escape(user.full_name)
 
-user_name = escape(user.full_name)
+    if user.username:
+        sender_text = f"@{escape(user.username)}"
+    else:
+        sender_text = (
+            f'<a href="tg://user?id={user.id}">'
+            f"{user_name}"
+            f"</a>"
+        )
 
-if user.username:
-    sender_text = f"@{escape(user.username)}"
-else:
-    sender_text = (
-        f'<a href="tg://user?id={user.id}">'
-        f"{user_name}"
-        f"</a>"
+    caption = (
+        f"Предложение от: {sender_text}\n"
+        f"Имя: {user_name}\n"
+        f"ID пользователя: <code>{user_id}</code>"
     )
-
-caption = (
-    f"Предложение от: {sender_text}\n"
-    f"Имя: {user_name}\n"
-    f"ID пользователя: <code>{user.id}</code>"
-)
-
-    
 
     try:
         sent_message = await bot.send_photo(
@@ -551,10 +486,6 @@ caption = (
         )
 
 
-# =========================
-# Принятие стикера
-# =========================
-
 @dp.callback_query(F.data.startswith("accept_suggestion:"))
 async def accept_suggestion(
     callback: CallbackQuery,
@@ -570,14 +501,6 @@ async def accept_suggestion(
     try:
         user_id = int(callback.data.split(":", 1)[1])
 
-    except (ValueError, AttributeError):
-        await callback.answer(
-            "Неверный ID пользователя.",
-            show_alert=True,
-        )
-        return
-
-    try:
         await bot.send_message(
             chat_id=user_id,
             text=(
@@ -589,6 +512,13 @@ async def accept_suggestion(
         await callback.answer(
             "Пользователь уведомлён о принятии."
         )
+
+    except (ValueError, AttributeError):
+        await callback.answer(
+            "Неверный ID пользователя.",
+            show_alert=True,
+        )
+        return
 
     except Exception as error:
         print(
@@ -624,10 +554,6 @@ async def already_accepted(callback: CallbackQuery):
     await callback.answer("Этот стикер уже был принят.")
 
 
-# =========================
-# Отклонение стикера
-# =========================
-
 @dp.callback_query(F.data.startswith("reject_suggestion:"))
 async def reject_suggestion(
     callback: CallbackQuery,
@@ -643,14 +569,6 @@ async def reject_suggestion(
     try:
         user_id = int(callback.data.split(":", 1)[1])
 
-    except (ValueError, AttributeError):
-        await callback.answer(
-            "Неверный ID пользователя.",
-            show_alert=True,
-        )
-        return
-
-    try:
         await bot.send_message(
             chat_id=user_id,
             text="Ваш стикер был отклонён администрацией.",
@@ -659,6 +577,13 @@ async def reject_suggestion(
         await callback.answer(
             "Пользователь уведомлён об отклонении."
         )
+
+    except (ValueError, AttributeError):
+        await callback.answer(
+            "Неверный ID пользователя.",
+            show_alert=True,
+        )
+        return
 
     except Exception as error:
         print(
@@ -693,10 +618,6 @@ async def reject_suggestion(
 async def already_rejected(callback: CallbackQuery):
     await callback.answer("Этот стикер уже был отклонён.")
 
-
-# =========================
-# Бан пользователя
-# =========================
 
 @dp.callback_query(F.data.startswith("ban_suggestion:"))
 async def ban_suggestion_user(callback: CallbackQuery):
@@ -745,10 +666,6 @@ async def ban_suggestion_user(callback: CallbackQuery):
             )
 
 
-# =========================
-# Разбан пользователя
-# =========================
-
 @dp.callback_query(F.data.startswith("unban_suggestion:"))
 async def unban_suggestion_user(callback: CallbackQuery):
     if callback.from_user.id != SUGGESTIONS_USER_ID:
@@ -789,10 +706,6 @@ async def unban_suggestion_user(callback: CallbackQuery):
             )
 
 
-# =========================
-# Обработка сообщений группы
-# =========================
-
 @dp.message()
 async def handle_sticker(
     message: Message,
@@ -815,30 +728,22 @@ async def handle_sticker(
         )
         return
 
-    # Запрещаем GIF и анимации
     if message.animation is not None:
         await mute_user(message, bot)
         await send_sanction_message(message, bot)
         return
 
-    # Обрабатываем только стикеры
     if message.sticker is None:
         return
 
     sticker_pack_name = message.sticker.set_name or ""
 
-    # Разрешённый стикерпак
     if sticker_pack_name == ALLOWED_PACK_NAME:
         return
 
-    # Запрещённый стикерпак
     await mute_user(message, bot)
     await send_sanction_message(message, bot)
 
-
-# =========================
-# Запуск бота
-# =========================
 
 async def main():
     token = os.getenv("BOT_TOKEN")
