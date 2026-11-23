@@ -17,6 +17,18 @@ from aiogram.types import (
     CallbackQuery,
 )
 
+ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+support_keyboard = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="Техподдержка",
+                url="https://t.me/misterstayaway"
+            )
+        ]
+    ]
+)
 
 ALLOWED_PACK_NAME = "t_me_akstikers_by_fStikBot"
 SUGGESTIONS_USER_ID = 6558705988
