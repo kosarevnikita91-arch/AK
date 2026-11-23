@@ -37,9 +37,16 @@ start_keyboard = InlineKeyboardMarkup(
                 text="Предложить стикер",
                 callback_data="suggest_sticker",
             )
-        ]
+        ],
+        [
+            InlineKeyboardButton(
+                text="Техподдержка",
+                url="https://t.me/misterstayaway",
+            )
+        ],
     ]
 )
+
 
 
 def suggestion_keyboard(
